@@ -1,8 +1,8 @@
 name: Deploy to GitHub Pages
 
+# NOTE: GitHub Pages が未有効(privateリポジトリ)のため、手動実行のみにしている。
+# Pages を有効化したら push トリガー(branches: [main] 等)を戻すこと。
 on:
-  push:
-    branches: [claude/language-vocab-app-qnyfyp, main]
   workflow_dispatch:
 
 permissions:
