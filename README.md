@@ -25,6 +25,46 @@ npm run preview  # 本番ビルドの確認(SW・通知のテストはこちら�
 
 > Service Worker と通知は本番ビルド(`npm run preview`)でのみ動作します。
 
+## スマホで使う(外部サーバー不要・PC+スマホで完結)
+
+このアプリはバックエンドを持たないため、PCをLAN内の配信元にすればスマホだけで使えます。
+**一度PWAとしてインストールすればアプリ全体がスマホ内にキャッシュされるので、以後はPCの電源が入っていなくてもスマホ単体でオフライン動作します**(PCが必要なのは初回とアップデート時のみ)。
+
+PWA機能(Service Worker・通知・インストール)はHTTPSが必須なので、[mkcert](https://github.com/FiloSottile/mkcert) でLAN用証明書を作ります:
+
+```bash
+# --- PC側(一度だけ) ---
+mkcert -install                      # ローカルCAを作成
+mkdir certs
+mkcert -cert-file certs/cert.pem -key-file certs/key.pem \
+  localhost 192.168.x.x              # ← 自分のPCのLAN IPに置き換え(ip addr / ipconfig で確認)
+
+# --- 配信 ---
+npm run serve:lan                    # build + HTTPSでLANに公開
+```
+
+```text
+# --- スマホ側(一度だけ) ---
+1. mkcert -CAROOT で表示されるフォルダの rootCA.pem をスマホに送る(AirDrop・メール等)
+2. CA証明書として信頼させる
+   - Android: 設定 → セキュリティ → 認証情報のインストール → CA証明書
+   - iOS: プロファイルをインストール → 設定 → 一般 → 情報 → 証明書信頼設定 でON
+3. ブラウザで https://192.168.x.x:4173 を開く
+4. 「ホーム画面に追加」(Android Chrome はインストールバナー、iOS Safari は共有メニューから)
+```
+
+Android + USBケーブルがある場合は証明書なしの近道もあります(`localhost` は特例でHTTPS不要):
+
+```bash
+adb reverse tcp:4173 tcp:4173   # USBデバッグ有効のAndroidをUSB接続して実行
+# スマホのChromeで http://localhost:4173 を開く
+```
+
+注意点:
+- 学習データは端末ごとに独立して保存されます(PCとスマホのデータは同期されません)
+- 通知のフル機能(アプリを閉じた状態での Periodic Background Sync)は Android Chrome のみ。iOS は16.4以降でホーム画面に追加した場合に通知が使えます
+- PCのIPアドレスが変わったら証明書を作り直してください(ルーターでPCのIPを固定すると楽です)
+
 ## 通知の仕組みと制約
 
 PWA単体では「アプリを完全に閉じた状態への定時プッシュ」はできないため、3層構成にしています:
