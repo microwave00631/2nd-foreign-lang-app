@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  // GitHub Pages はサブパス配信のため、CI では BASE_PATH=/2nd-foreign-lang-app/ を渡す
+  base: process.env.BASE_PATH ?? '/',
   plugins: [
     react(),
     VitePWA({
@@ -18,15 +20,14 @@ export default defineConfig({
         short_name: '語彙トレ',
         description: '第二外国語(中国語・タイ語)の語彙を間隔反復で強化するアプリ',
         lang: 'ja',
-        start_url: '/',
         display: 'standalone',
         background_color: '#1a1d29',
         theme_color: '#1a1d29',
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
           {
-            src: '/icons/icon-512.png',
+            src: 'icons/icon-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',

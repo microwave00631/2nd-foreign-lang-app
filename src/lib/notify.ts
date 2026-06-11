@@ -28,12 +28,13 @@ async function showViaServiceWorker(title: string, body: string): Promise<boolea
   if (!('serviceWorker' in navigator)) return false;
   const reg = await navigator.serviceWorker.getRegistration();
   if (!reg) return false;
+  const base = import.meta.env.BASE_URL;
   await reg.showNotification(title, {
     body,
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    icon: `${base}icons/icon-192.png`,
+    badge: `${base}icons/icon-192.png`,
     tag: 'evening-review',
-    data: { url: '/quiz' },
+    data: { url: `${base}quiz` },
   });
   return true;
 }

@@ -35,12 +35,14 @@ async function maybeNotify(): Promise<void> {
   if (now < timeStringToTodayMs(settings.notificationTime, now)) return;
   const due = await dueCountForToday();
   if (due === 0) return;
+  // サブパス配信(GitHub Pages等)でも壊れないよう SW のスコープ基準で解決する
+  const scope = self.registration.scope;
   await self.registration.showNotification('今日の復習の時間です', {
     body: `復習 ${due}語が待っています🔥 寝る前にサクッと片付けましょう`,
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    icon: new URL('icons/icon-192.png', scope).href,
+    badge: new URL('icons/icon-192.png', scope).href,
     tag: 'evening-review',
-    data: { url: '/quiz' },
+    data: { url: new URL('quiz', scope).href },
   });
   await saveSettings({ lastNotifiedDate: today });
 }
@@ -54,7 +56,7 @@ self.addEventListener('periodicsync', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url: string = event.notification.data?.url ?? '/';
+  const url: string = event.notification.data?.url ?? self.registration.scope;
   event.waitUntil(
     (async () => {
       const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });

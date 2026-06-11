@@ -16,8 +16,8 @@ interface RawDictFile {
 }
 
 const DICT_URLS: Record<Lang, string> = {
-  zh: '/dict/zh.json',
-  th: '/dict/th.json',
+  zh: `${import.meta.env.BASE_URL}dict/zh.json`,
+  th: `${import.meta.env.BASE_URL}dict/th.json`,
 };
 
 async function importLang(lang: Lang): Promise<void> {
