@@ -1,8 +1,8 @@
 name: Deploy to GitHub Pages
 
-# NOTE: GitHub Pages が未有効(privateリポジトリ)のため、手動実行のみにしている。
-# Pages を有効化したら push トリガー(branches: [main] 等)を戻すこと。
 on:
+  push:
+    branches: [claude/language-vocab-app-qnyfyp, main]
   workflow_dispatch:
 
 permissions:
@@ -28,6 +28,9 @@ jobs:
       - run: npm run build
         env:
           BASE_PATH: /2nd-foreign-lang-app/
+          # 簡易パスコードの合言葉ハッシュ。リポジトリ変数 GATE_HASH で上書き可能。
+          # 未設定なら下のデフォルト(合言葉: nihao-2026)を使う。
+          VITE_GATE_HASH: ${{ vars.GATE_HASH || '0295df06327b5eda7b490dabc14eac970f6e4e4bd3fa1d81ccbac586c6107e3e' }}
       # SPA のディープリンク(/quiz 等)を Pages の 404 フォールバックで処理する
       - run: cp dist/index.html dist/404.html
       - uses: actions/configure-pages@v5

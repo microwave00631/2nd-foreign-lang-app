@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { Gate } from './components/Gate';
 import { HomePage } from './pages/Home';
 import { SearchPage } from './pages/Search';
 import { QuizPage } from './pages/Quiz';
@@ -19,19 +20,21 @@ export function App() {
   }, []);
 
   return (
-    <SettingsProvider>
-      <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/quiz" element={<QuizPage />} />
-            <Route path="/words" element={<WordsPage />} />
-            <Route path="/stats" element={<StatsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </SettingsProvider>
+    <Gate>
+      <SettingsProvider>
+        <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/quiz" element={<QuizPage />} />
+              <Route path="/words" element={<WordsPage />} />
+              <Route path="/stats" element={<StatsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </SettingsProvider>
+    </Gate>
   );
 }

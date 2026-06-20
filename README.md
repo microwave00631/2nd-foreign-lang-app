@@ -25,6 +25,33 @@ npm run preview  # 本番ビルドの確認(SW・通知のテストはこちら�
 
 > Service Worker と通知は本番ビルド(`npm run preview`)でのみ動作します。
 
+## 公開とアクセス制限(簡易パスコード)
+
+`claude/language-vocab-app-qnyfyp` / `main` への push で GitHub Pages に自動デプロイされます
+(`.github/workflows/deploy.yml`)。公開URLは `https://microwave00631.github.io/2nd-foreign-lang-app/` です。
+
+アクセス時に**合言葉(パスコード)**の入力を求めます。初期値は **`nihao-2026`** です。
+
+> ⚠️ これは静的サイト上のクライアント側チェックなので「本物のアクセス制限」ではありません。
+> うっかり訪問者を弾く“やわらかい鍵”であり、技術的にはバンドルを読めば突破できます。
+> 本当に限定公開したい場合は Cloudflare Access 等、配信側で認証する仕組みが必要です。
+
+### 合言葉を変える
+
+合言葉そのものはリポジトリに入れず、SHA-256 ハッシュだけを使います。新しいハッシュを生成して
+GitHub のリポジトリ変数 `GATE_HASH` に設定すると、次回デプロイから反映されます
+(変数が未設定なら workflow 内のデフォルトを使用)。
+
+```bash
+# 新しい合言葉のハッシュを生成
+node -e 'console.log(require("crypto").createHash("sha256").update("2flang-gate:"+process.argv[1]).digest("hex"))' あなたの合言葉
+```
+
+GitHub: Settings → Secrets and variables → Actions → Variables → New repository variable
+（Name: `GATE_HASH` / Value: 上で出たハッシュ）。合言葉を変えると、既存端末は次回再入力を求められます。
+
+ローカル開発(`npm run dev` / `npm run preview`)では `VITE_GATE_HASH` 未設定のためゲートは無効です。
+
 ## スマホで使う(外部サーバー不要・PC+スマホで完結)
 
 このアプリはバックエンドを持たないため、PCをLAN内の配信元にすればスマホだけで使えます。
