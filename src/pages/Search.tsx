@@ -143,10 +143,12 @@ export function SearchPage() {
               <div className="search-result-head">
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>{apiResult.headword}</div>
-                  {apiResult.readingMissing ? (
+                  {apiResult.readingMissing || apiResult.readingApprox ? (
                     <div style={{ margin: '8px 0' }}>
                       <label className="muted" style={{ fontSize: '0.8rem' }}>
-                        読み方を入力してください(ローマ字)
+                        {apiResult.readingApprox
+                          ? '読み(自動生成・近似。必要なら修正してください)'
+                          : '読み方を入力してください(ローマ字)'}
                       </label>
                       <input
                         type="text"

@@ -9,8 +9,10 @@ export interface TranslateResult {
   pos?: string;
   level?: string;
   tags: string[];
-  /** タイ語API結果など、読みが自動付与できなかった場合 true */
+  /** 読みを自動付与できなかった場合 true(手入力が必要) */
   readingMissing?: boolean;
+  /** 読みが近似自動生成(タイ語のローマ字化など)で、確認・修正を促す場合 true */
+  readingApprox?: boolean;
 }
 
 const HAN_RE = /[一-鿿]/;
@@ -113,14 +115,19 @@ export async function translateViaApi(lang: Lang, query: string, direction: 'L2t
 
   let reading = '';
   let readingMissing = false;
+  let readingApprox = false;
   if (lang === 'zh') {
     // pinyin-pro は辞書データが大きいため遅延ロード
     const { pinyin } = await import('pinyin-pro');
     reading = pinyin(headword, { toneType: 'symbol' });
   } else {
-    readingMissing = true; // タイ語の自動ローマ字化は非対応 → 保存前に手入力
+    // タイ語はルールベースで近似ローマ字化(声調なし)。確認・修正前提で自動付与。
+    const { romanizeThai } = await import('./thaiRomanize');
+    reading = romanizeThai(headword).reading;
+    readingApprox = reading.length > 0;
+    readingMissing = reading.length === 0; // 変換不能のときのみ手入力
   }
-  return { headword, reading, meaningJa, source: 'api', tags: [], readingMissing };
+  return { headword, reading, meaningJa, source: 'api', tags: [], readingMissing, readingApprox };
 }
 
 export async function logLookup(lang: Lang, query: string, r: TranslateResult): Promise<number> {
