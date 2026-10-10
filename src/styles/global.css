@@ -109,6 +109,8 @@ input[type='time'],
 input[type='number'],
 input[type='email'],
 input[type='password'],
+input[type='url'],
+textarea,
 select {
   background: var(--bg-input);
   border: 1px solid var(--border);
@@ -121,6 +123,7 @@ select {
 }
 
 input:focus,
+textarea:focus,
 select:focus {
   outline: 2px solid var(--accent);
   outline-offset: -1px;
@@ -569,4 +572,231 @@ nav.tabbar a.active {
   font-size: 3rem;
   font-weight: 800;
   margin: 8px 0;
+}
+
+/* --- reader(読む) --- */
+.reader-form textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.reader-form-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.reader-form-row .btn-primary {
+  flex: 1;
+}
+
+.reader-form-row .btn-secondary {
+  flex-shrink: 0;
+}
+
+.reader-help {
+  margin-top: 16px;
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+.reader-body {
+  margin-top: 20px;
+  font-size: 1.12rem;
+  line-height: 1.85;
+  /* 長押しで OS の選択メニューや拡大鏡が出ないようにする */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+.reader-body p {
+  margin: 0 0 1em;
+}
+
+.reader-title {
+  color: var(--text);
+  font-size: 1.25rem;
+  line-height: 1.5;
+}
+
+.tok {
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.tok:active {
+  background: rgba(91, 141, 239, 0.18);
+}
+
+.tok.known {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.tok.k-new,
+.tok.k-learning {
+  text-decoration-color: var(--amber);
+}
+
+.tok.k-review {
+  text-decoration-color: var(--accent);
+}
+
+.tok.k-mastered {
+  text-decoration-color: var(--green);
+}
+
+.tok.active {
+  background: rgba(91, 141, 239, 0.35);
+}
+
+.reader-source {
+  font-size: 0.75rem;
+}
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.word-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 70;
+  max-width: 560px;
+  margin: 0 auto;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+  padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.4);
+  animation: sheet-up 0.18s ease-out;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+.sheet-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.sheet-surface {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.analysis-lemma {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 2px 0 6px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.chip {
+  font-size: 0.72rem;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--bg-input);
+  color: var(--text-dim);
+}
+
+.analysis-meaning {
+  font-size: 1.15rem;
+  margin-bottom: 2px;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 12px;
+  margin: 14px 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.analysis-grid dt {
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.analysis-grid dd {
+  margin: 0;
+}
+
+.analysis-grid .reason {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-top: 2px;
+}
+
+.analysis-sentence {
+  border-left: 3px solid var(--border);
+  padding-left: 10px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.analysis-saved {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 0.85rem;
+  color: var(--green);
+}
+
+.grammar-info {
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+.grammar-example {
+  margin-top: 8px;
+  border-left: 3px solid var(--border);
+  padding-left: 8px;
+}
+
+.grammar-info mark {
+  background: rgba(232, 180, 80, 0.25);
+  color: inherit;
+  border-radius: 3px;
+}
+
+.present-grammar {
+  text-align: left;
+  margin: 0 0 16px;
+  color: var(--text-dim);
 }

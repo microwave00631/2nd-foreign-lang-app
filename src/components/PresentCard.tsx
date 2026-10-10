@@ -1,5 +1,6 @@
 import type { Word } from '../db/schema';
 import { SpeakButton } from './SpeakButton';
+import { GrammarInfo } from './GrammarInfo';
 
 export function PresentCard({ word, onNext }: { word: Word; onNext: () => void }) {
   return (
@@ -11,6 +12,11 @@ export function PresentCard({ word, onNext }: { word: Word; onNext: () => void }
         <div style={{ marginTop: 12, fontSize: '1.2rem' }}>{word.meaningJa}</div>
         {word.pos && <div className="muted" style={{ marginTop: 4 }}>{word.pos}</div>}
       </div>
+      {(word.grammar || word.examples?.length) && (
+        <div className="present-grammar">
+          <GrammarInfo word={word} examples={1} />
+        </div>
+      )}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
         <SpeakButton text={word.headword} lang={word.lang} />
       </div>

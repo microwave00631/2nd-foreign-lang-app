@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { Lang } from '../db/schema';
 import { getQueueCounts, type QueueCounts } from '../lib/queue';
 import { currentStreak } from '../lib/stats';
 import { shouldShowBanner } from '../lib/notify';
 import { useSettings } from '../context/SettingsContext';
 
-const LANG_LABEL: Record<Lang, string> = { zh: '🇨🇳 中国語', th: '🇹🇭 タイ語' };
+import { LANGS, LANG_FLAG, LANG_LABEL } from '../lib/langs';
 
 export function HomePage() {
   const { settings, update, loaded } = useSettings();
@@ -26,13 +25,13 @@ export function HomePage() {
     <div>
       <h1>語彙トレ</h1>
       <div className="lang-switch">
-        {(['zh', 'th'] as Lang[]).map((l) => (
+        {LANGS.map((l) => (
           <button
             key={l}
             className={settings.activeLang === l ? 'active' : ''}
             onClick={() => void update({ activeLang: l })}
           >
-            {LANG_LABEL[l]}
+            {LANG_FLAG[l]} {LANG_LABEL[l]}
           </button>
         ))}
       </div>
@@ -71,6 +70,7 @@ export function HomePage() {
         毎日のクイズで単語を学ぶと、間隔反復(SRS)が次の復習日を自動で決めます。
         知らない単語は「翻訳・検索」で調べて学習リストに追加。
         設定で夜のリマインダー通知を有効にすると、復習を忘れません。
+        ロシア語は「読む」で記事を開き、知らない単語を長押しすると解説が出て単語帳に入ります。
       </div>
     </div>
   );

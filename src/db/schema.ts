@@ -1,7 +1,7 @@
 // NOTE: このモジュールは Service Worker からも import されるため、DOM API に依存しないこと。
 import Dexie, { type Table } from 'dexie';
 
-export type Lang = 'zh' | 'th';
+export type Lang = 'zh' | 'th' | 'ru';
 export type Stage = 'new' | 'learning' | 'review' | 'mastered';
 export type QuizType = 'mc-recog' | 'mc-recall' | 'typing';
 export type Direction = 'L2toJA' | 'JAtoL2';
@@ -27,8 +27,16 @@ export interface Word {
   pos?: string;
   level?: string;
   tags: string[];
-  source: 'seed' | 'api' | 'manual';
+  source: 'seed' | 'api' | 'manual' | 'reader';
   addedAt: number;
+  /** 読む画面で長押しして調べたときの文法情報(ロシア語など) */
+  grammar?: WordGrammar;
+  /** 記事中で出会った例文(新しい順・最大5件) */
+  examples?: WordExample[];
+  /** 記事中で出会った語形(小文字)。読む画面のハイライトに使う */
+  forms?: string[];
+  /** 読む画面で長押しした回数 */
+  lookupCount?: number;
   // SM-2 状態
   repetitions: number;
   easeFactor: number;
@@ -37,6 +45,25 @@ export interface Word {
   lapses: number;
   lastReviewedAt: number | null;
   stage: Stage;
+}
+
+export interface WordGrammar {
+  gender?: string;
+  aspect?: string;
+  aspectPair?: string;
+  government?: string;
+  notes?: string;
+}
+
+export interface WordExample {
+  surface: string;
+  sentence: string;
+  sentenceJa?: string;
+  form?: string;
+  formReason?: string;
+  contextJa?: string;
+  url?: string;
+  at: number;
 }
 
 export interface Review {
@@ -76,6 +103,8 @@ export interface Settings {
   typingToneStrict: boolean;
   dictVersionImported: { zh: number; th: number };
   streakBest: number;
+  /** 読む画面のサーバー(vocab-reader)用アクセスキー */
+  readerKey: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -91,6 +120,7 @@ export const DEFAULT_SETTINGS: Settings = {
   typingToneStrict: false,
   dictVersionImported: { zh: 0, th: 0 },
   streakBest: 0,
+  readerKey: '',
 };
 
 export class GoiDB extends Dexie {
@@ -116,7 +146,8 @@ export const db = new GoiDB();
 
 export async function getSettings(): Promise<Settings> {
   const s = await db.settings.get('app');
-  return s ?? DEFAULT_SETTINGS;
+  // 後から増えた設定項目が古い保存データに無くても既定値で補う
+  return { ...DEFAULT_SETTINGS, ...s };
 }
 
 export async function saveSettings(patch: Partial<Settings>): Promise<Settings> {

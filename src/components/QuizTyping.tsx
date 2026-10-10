@@ -3,6 +3,7 @@ import type { QuizCard } from '../lib/quiz';
 import { checkTypingAnswer } from '../lib/answer';
 import { useSettings } from '../context/SettingsContext';
 import { SpeakButton } from './SpeakButton';
+import { LANG_LABEL } from '../lib/langs';
 
 interface Props {
   card: QuizCard;
@@ -25,14 +26,17 @@ export function QuizTyping({ card, onAnswer }: Props) {
     setTimeout(() => onAnswer(ok), ok ? 700 : 2200);
   };
 
-  const placeholder =
-    card.word.lang === 'zh' ? 'ピンイン(声調は任意)または漢字' : 'ローマ字またはタイ文字';
+  const placeholder = {
+    zh: 'ピンイン(声調は任意)または漢字',
+    th: 'ローマ字またはタイ文字',
+    ru: 'キリル文字(辞書形。アクセント記号は不要)',
+  }[card.word.lang];
 
   return (
     <div>
       <div className="quiz-prompt">
         <div className="meaning">{card.word.meaningJa}</div>
-        <p className="muted">{card.word.lang === 'zh' ? '中国語' : 'タイ語'}で入力してください</p>
+        <p className="muted">{LANG_LABEL[card.word.lang]}で入力してください</p>
       </div>
       <form onSubmit={submit}>
         <input
@@ -42,6 +46,7 @@ export function QuizTyping({ card, onAnswer }: Props) {
           placeholder={placeholder}
           autoFocus
           autoCapitalize="off"
+          lang={card.word.lang}
           autoCorrect="off"
           disabled={result !== null}
         />
