@@ -1,3 +1,4 @@
+import { LANG_LABEL } from '../lib/langs';
 import { useState } from 'react';
 import type { QuizCard } from '../lib/quiz';
 import { SpeakButton } from './SpeakButton';
@@ -35,7 +36,7 @@ export function QuizMC({ card, onAnswer }: Props) {
         ) : (
           <>
             <div className="meaning">{card.word.meaningJa}</div>
-            <p className="muted">{card.word.lang === 'zh' ? '中国語' : 'タイ語'}はどれ?</p>
+            <p className="muted">{LANG_LABEL[card.word.lang]}はどれ?</p>
           </>
         )}
       </div>

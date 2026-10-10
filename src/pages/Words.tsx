@@ -4,6 +4,7 @@ import { db, type Stage } from '../db/schema';
 import { localDateKey } from '../lib/time';
 import { useSettings } from '../context/SettingsContext';
 import { SpeakButton } from '../components/SpeakButton';
+import { GrammarInfo } from '../components/GrammarInfo';
 
 const STAGE_LABEL: Record<Stage, string> = {
   new: '未学習',
@@ -54,7 +55,8 @@ export function WordsPage() {
             <div className="w-main">
               <div className="w-head">{w.headword}</div>
               <div className="w-sub">
-                {w.reading} ・ {w.meaningJa}
+                {w.reading && w.reading !== w.headword ? `${w.reading} ・ ` : ''}
+                {w.meaningJa}
               </div>
             </div>
             <span className={`stage-chip stage-${w.stage}`}>{STAGE_LABEL[w.stage]}</span>
@@ -64,6 +66,7 @@ export function WordsPage() {
               <div className="muted" style={{ fontSize: '0.85rem', lineHeight: 1.8 }}>
                 {w.pos && <div>品詞: {w.pos}</div>}
                 {w.level && <div>レベル: {w.level.toUpperCase()}</div>}
+                <GrammarInfo word={w} />
                 <div>正答間隔: {w.intervalDays}日 / 易しさ: {w.easeFactor.toFixed(2)} / 失敗: {w.lapses}回</div>
                 <div>次回復習: {w.dueAt > 0 ? localDateKey(w.dueAt) : '—'}</div>
               </div>

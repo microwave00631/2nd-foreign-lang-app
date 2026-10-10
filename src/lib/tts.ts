@@ -4,8 +4,7 @@
 //  - ユーザー操作の同期性を守るため、speak() 内では await せず、事前ロード済みの音声キャッシュを
 //    同期参照する(iOS/一部ブラウザは非同期境界をまたぐと発話をブロックするため)。
 import type { Lang } from '../db/schema';
-
-const BCP47: Record<Lang, string> = { zh: 'zh-CN', th: 'th-TH' };
+import { BCP47 } from './langs';
 
 let voicesReady: Promise<SpeechSynthesisVoice[]> | null = null;
 // speak() から同期参照するためのキャッシュ。loadVoices() の解決時に更新する。
@@ -35,7 +34,7 @@ function loadVoices(): Promise<SpeechSynthesisVoice[]> {
 
 // 音声リストから lang に最も合う音声を選ぶ(純粋関数・同期)。
 function pickVoice(voices: SpeechSynthesisVoice[], lang: Lang): SpeechSynthesisVoice | null {
-  const prefix = lang === 'zh' ? 'zh' : 'th';
+  const prefix: string = lang;
   const exact = voices.find(
     (v) => v.lang.replace('_', '-').toLowerCase() === BCP47[lang].toLowerCase(),
   );

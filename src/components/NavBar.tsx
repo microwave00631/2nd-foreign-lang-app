@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 const TABS = [
   { to: '/', icon: '🏠', label: 'ホーム' },
   { to: '/search', icon: '🔍', label: '翻訳' },
+  { to: '/read', icon: '📖', label: '読む' },
   { to: '/quiz', icon: '✏️', label: 'クイズ' },
   { to: '/words', icon: '📚', label: '単語帳' },
   { to: '/stats', icon: '📊', label: '統計' },

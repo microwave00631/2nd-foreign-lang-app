@@ -2,6 +2,7 @@
 // シード辞書の表記規約: 中国語=声調記号付きピンイン(空白区切り)、
 // タイ語=声調記号なしローマ字(ハイフン・空白あり得る)。
 import type { Lang } from '../db/schema';
+import { normalizeRu } from './langs';
 
 const PINYIN_TONED: Record<string, [string, number]> = {
   ā: ['a', 1], á: ['a', 2], ǎ: ['a', 3], à: ['a', 4],
@@ -73,6 +74,9 @@ export function checkTypingAnswer(
 ): boolean {
   const a = answer.trim();
   if (!a) return false;
+
+  // ロシア語: 見出し語(または読み=アクセント付き)と、アクセント記号・ё/е・大小文字を無視して比較
+  if (lang === 'ru') return normalizeRu(a) === normalizeRu(headword) || (!!reading && normalizeRu(a) === normalizeRu(reading));
 
   // 原語スクリプトでの回答はそのまま比較
   if (lang === 'zh' && HAN_RE.test(a)) return a === headword.trim();

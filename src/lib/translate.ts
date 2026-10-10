@@ -22,6 +22,7 @@ const THAI_RE = /[฀-๿]/;
 export function detectDirection(query: string, lang: Lang): 'L2toJA' | 'JAtoL2' {
   if (lang === 'th' && THAI_RE.test(query)) return 'L2toJA';
   if (lang === 'zh' && HAN_RE.test(query) && !/[ぁ-んァ-ン]/.test(query)) return 'L2toJA';
+  if (lang === 'ru' && /[Ѐ-ӿ]/.test(query)) return 'L2toJA';
   return 'JAtoL2';
 }
 
@@ -83,11 +84,11 @@ async function translateDeepL(query: string, from: string, to: string, apiKey: s
   return json?.translations?.[0]?.text?.trim() ?? null;
 }
 
-const MYMEMORY_LANG: Record<Lang, string> = { zh: 'zh-CN', th: 'th' };
+const MYMEMORY_LANG: Record<Lang, string> = { zh: 'zh-CN', th: 'th', ru: 'ru' };
 
 /**
  * APIフォールバック翻訳。オフライン・失敗時は null。
- * DeepL はタイ語非対応のため th は常に MyMemory。
+ * DeepL はタイ語非対応のため th は常に MyMemory(中国語・ロシア語は DeepL も可)。
  */
 export async function translateViaApi(lang: Lang, query: string, direction: 'L2toJA' | 'JAtoL2'): Promise<TranslateResult | null> {
   if (typeof navigator !== 'undefined' && !navigator.onLine) return null;
@@ -99,8 +100,8 @@ export async function translateViaApi(lang: Lang, query: string, direction: 'L2t
 
   let translated: string | null = null;
   try {
-    if (settings.apiProvider === 'deepl' && settings.apiKey && lang === 'zh') {
-      translated = await translateDeepL(query, direction === 'JAtoL2' ? 'ja' : 'zh', direction === 'JAtoL2' ? 'zh' : 'ja', settings.apiKey);
+    if (settings.apiProvider === 'deepl' && settings.apiKey && lang !== 'th') {
+      translated = await translateDeepL(query, direction === 'JAtoL2' ? 'ja' : lang, direction === 'JAtoL2' ? lang : 'ja', settings.apiKey);
     }
     if (!translated) {
       translated = await translateMyMemory(query, from, to, settings.apiEmail);
@@ -120,6 +121,9 @@ export async function translateViaApi(lang: Lang, query: string, direction: 'L2t
     // pinyin-pro は辞書データが大きいため遅延ロード
     const { pinyin } = await import('pinyin-pro');
     reading = pinyin(headword, { toneType: 'symbol' });
+  } else if (lang === 'ru') {
+    // ロシア語はキリル文字が読みを兼ねる(アクセントは「読む」で長押しすると付く)
+    reading = '';
   } else {
     // タイ語はルールベースで近似ローマ字化(声調なし)。確認・修正前提で自動付与。
     const { romanizeThai } = await import('./thaiRomanize');

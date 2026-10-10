@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Lang } from '../db/schema';
 import { hasVoice, speak } from '../lib/tts';
-
-const LANG_LABEL: Record<Lang, string> = { zh: '中国語', th: 'タイ語' };
+import { LANG_LABEL } from '../lib/langs';
 
 export function SpeakButton({ text, lang }: { text: string; lang: Lang }) {
   // 音声の有無は「案内表示の判断」にのみ使い、ボタンは無効化しない。

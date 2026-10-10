@@ -94,7 +94,9 @@ export function SearchPage() {
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder={lang === 'zh' ? '日本語・中国語・ピンインで検索' : '日本語・タイ語・ローマ字で検索'}
+        placeholder={
+          { zh: '日本語・中国語・ピンインで検索', th: '日本語・タイ語・ローマ字で検索', ru: '日本語・ロシア語で検索' }[lang]
+        }
       />
 
       {query.trim() && dictHits.length > 0 && (

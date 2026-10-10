@@ -1,9 +1,9 @@
 // 内蔵辞書(public/dict/*.json)を初回起動時に IndexedDB へ取り込む。
 // dictVersionImported でバージョンゲートし、再インポートは version 更新時のみ。
-import { db, getSettings, saveSettings, type DictEntry, type Lang } from './schema';
+import { db, getSettings, saveSettings, type DictEntry } from './schema';
 
 interface RawDictFile {
-  lang: Lang;
+  lang: 'zh' | 'th';
   version: number;
   entries: {
     h: string; // headword
@@ -15,12 +15,13 @@ interface RawDictFile {
   }[];
 }
 
-const DICT_URLS: Record<Lang, string> = {
+// ロシア語は内蔵辞書なし(「読む」で出会った単語を学ぶ)
+const DICT_URLS: Record<'zh' | 'th', string> = {
   zh: `${import.meta.env.BASE_URL}dict/zh.json`,
   th: `${import.meta.env.BASE_URL}dict/th.json`,
 };
 
-async function importLang(lang: Lang): Promise<void> {
+async function importLang(lang: 'zh' | 'th'): Promise<void> {
   const settings = await getSettings();
   let raw: RawDictFile;
   try {

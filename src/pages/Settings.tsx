@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { db } from '../db/schema';
 import { registerPeriodicSync, requestPermission, sendTestNotification } from '../lib/notify';
 import { useSettings } from '../context/SettingsContext';
@@ -6,6 +7,17 @@ import { useSettings } from '../context/SettingsContext';
 export function SettingsPage() {
   const { settings, update } = useSettings();
   const [testMsg, setTestMsg] = useState('');
+  const [params, setParams] = useSearchParams();
+  const [keySaved, setKeySaved] = useState(false);
+
+  // https://…/settings?readerKey=xxxx で開くとアクセスキーを保存する(iPad で手入力しなくて済むように)
+  useEffect(() => {
+    const k = params.get('readerKey');
+    if (!k) return;
+    void update({ readerKey: k.trim() }).then(() => setKeySaved(true));
+    setParams({}, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toggleNotifications = async () => {
     if (!settings.notificationsEnabled) {
@@ -98,6 +110,25 @@ export function SettingsPage() {
         />
       </div>
 
+      <h2>読む(ロシア語)</h2>
+      <div className="setting-row">
+        <div>
+          <div className="s-label">アクセスキー</div>
+          <div className="s-hint">記事の取得と単語の解説に使うサーバーの鍵</div>
+        </div>
+        <div className="s-control">
+          <input
+            type="password"
+            value={settings.readerKey}
+            onChange={(e) => void update({ readerKey: e.target.value.trim() })}
+            placeholder="ru-…"
+            autoCapitalize="off"
+            autoCorrect="off"
+          />
+        </div>
+      </div>
+      {keySaved && <p className="muted">✓ アクセスキーを保存しました。「読む」から使えます。</p>}
+
       <h2>翻訳API</h2>
       <div className="setting-row">
         <div className="s-label">プロバイダ</div>
@@ -107,7 +138,7 @@ export function SettingsPage() {
             onChange={(e) => void update({ apiProvider: e.target.value as 'mymemory' | 'deepl' | 'none' })}
           >
             <option value="mymemory">MyMemory(無料・キー不要)</option>
-            <option value="deepl">DeepL Free(中国語のみ)</option>
+            <option value="deepl">DeepL Free(中国語・ロシア語)</option>
             <option value="none">使用しない</option>
           </select>
         </div>

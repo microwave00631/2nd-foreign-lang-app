@@ -8,6 +8,7 @@ import { QuizPage } from './pages/Quiz';
 import { WordsPage } from './pages/Words';
 import { StatsPage } from './pages/Stats';
 import { SettingsPage } from './pages/Settings';
+import { ReaderPage } from './pages/Reader';
 import { SettingsProvider } from './context/SettingsContext';
 import { seedDictionaries } from './db/seed';
 import { registerPeriodicSync, startForegroundTimer } from './lib/notify';
@@ -27,6 +28,7 @@ export function App() {
             <Route element={<Layout />}>
               <Route path="/" element={<HomePage />} />
               <Route path="/search" element={<SearchPage />} />
+              <Route path="/read" element={<ReaderPage />} />
               <Route path="/quiz" element={<QuizPage />} />
               <Route path="/words" element={<WordsPage />} />
               <Route path="/stats" element={<StatsPage />} />
