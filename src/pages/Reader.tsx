@@ -4,7 +4,11 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Word } from '../db/schema';
 import {
   analyzeWord,
+  articleId,
   fetchArticle,
+  getCachedLookup,
+  lookupKey,
+  putCachedLookup,
   formIndex,
   ReaderError,
   saveLookup,
@@ -49,7 +53,13 @@ interface Picked {
 type Sheet =
   | { state: 'loading'; picked: Picked }
   | { state: 'error'; picked: Picked; message: string; needsKey: boolean }
-  | { state: 'done'; picked: Picked; analysis: Analysis; saved: SaveResult | null; undone?: boolean };
+  | { state: 'done'; picked: Picked; analysis: Analysis; saved: SaveResult | null; cached: boolean; undone?: boolean };
+
+interface LookupResult {
+  analysis: Analysis;
+  saved: SaveResult | null;
+  cached: boolean;
+}
 
 export function ReaderPage() {
   const [params, setParams] = useSearchParams();
@@ -61,6 +71,8 @@ export function ReaderPage() {
   const [error, setError] = useState<{ message: string; needsKey: boolean } | null>(null);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const reqId = useRef(0);
+  // 解説を取得中の位置(同じ位置を連打しても API は1回だけ)
+  const pending = useRef(new Map<string, Promise<LookupResult>>());
 
   const words = useLiveQuery(
     () => db.words.where('[lang+headword]').between([LANG, ''], [LANG, '￿']).toArray(),
@@ -125,24 +137,24 @@ export function ReaderPage() {
     async (picked: Picked) => {
       const id = ++reqId.current;
       setSheet({ state: 'loading', picked });
+      if (!article) return;
+      const cacheKey = lookupKey(articleId(article), picked.p, picked.start, picked.word);
+      let job = pending.current.get(cacheKey);
+      if (!job) {
+        job = resolveLookup(cacheKey, picked, article.url).finally(() => pending.current.delete(cacheKey));
+        pending.current.set(cacheKey, job);
+      }
       try {
-        const analysis = await analyzeWord(LANG, picked.word, picked.sentence);
+        const r = await job;
         if (id !== reqId.current) return;
-        let saved: SaveResult | null = null;
-        try {
-          saved = await saveLookup(LANG, analysis, picked.sentence, article?.url);
-        } catch {
-          saved = null;
-        }
-        if (id !== reqId.current) return;
-        setSheet({ state: 'done', picked, analysis, saved });
+        setSheet({ state: 'done', picked, ...r });
       } catch (e) {
         if (id !== reqId.current) return;
         const err = e instanceof ReaderError ? e : new ReaderError('解説を取得できませんでした');
         setSheet({ state: 'error', picked, message: err.message, needsKey: err.needsKey });
       }
     },
-    [article?.url],
+    [article],
   );
 
   const close = () => {
@@ -222,6 +234,25 @@ export function ReaderPage() {
       {sheet && <WordSheet sheet={sheet} onClose={close} onUndo={() => void undo()} onRetry={() => void lookUp(sheet.picked)} />}
     </div>
   );
+}
+
+/**
+ * 長押しした位置の解説を用意する。
+ * 同じ記事・同じ位置・同じ単語ならキャッシュを返す(API を呼ばず、長押し回数も増やさない)。
+ * 初めての位置なら API で解説を作り、単語帳に登録(既にある単語なら回数+1)してキャッシュする。
+ */
+async function resolveLookup(cacheKey: string, picked: Picked, url?: string): Promise<LookupResult> {
+  const hit = await getCachedLookup(LANG, cacheKey).catch(() => null);
+  if (hit) return { ...hit, cached: true };
+  const analysis = await analyzeWord(LANG, picked.word, picked.sentence);
+  let saved: SaveResult | null = null;
+  try {
+    saved = await saveLookup(LANG, analysis, picked.sentence, url);
+  } catch {
+    saved = null;
+  }
+  await putCachedLookup(cacheKey, analysis, picked.sentence, url, saved?.word.id ?? null).catch(() => undefined);
+  return { analysis, saved, cached: false };
 }
 
 const key = (p: { p: number; start: number }) => `${p.p}:${p.start}`;
@@ -426,6 +457,8 @@ function AnalysisView({ sheet, onUndo }: { sheet: Extract<Sheet, { state: 'done'
               取り消す
             </button>
           </>
+        ) : sheet.saved && sheet.cached ? (
+          <span>✓ 単語帳にあります(この箇所は調べ済み・長押し {sheet.saved.word.lookupCount ?? 1} 回)</span>
         ) : sheet.saved ? (
           <span>✓ 単語帳にあります(長押し {sheet.saved.word.lookupCount ?? 1} 回目)</span>
         ) : (

@@ -1,5 +1,5 @@
 // 読む画面: 記事の取得・単語の解説(vocab-reader Edge Function)と、未知語の登録
-import { db, getSettings, type Lang, type Word, type WordExample } from '../db/schema';
+import { db, getSettings, type Lang, type LookupCacheEntry, type Word, type WordExample } from '../db/schema';
 import { INITIAL_SRS } from './srs';
 import { startOfLocalDay } from './time';
 import { normalizeRu } from './langs';
@@ -192,4 +192,62 @@ export function formIndex(words: Word[]): Map<string, Word> {
     for (const f of [w.headword, ...(w.forms ?? [])]) m.set(normalizeRu(f), w);
   }
   return m;
+}
+
+// ---------------- 長押し結果のキャッシュ ----------------
+// 同じ記事の同じ位置の同じ単語は、解説を作り直さず(トークンを使わず)、長押し回数も増やさない。
+// 位置が違えば文脈が違うので、新しく解説を作る。
+
+const CACHE_LIMIT = 2000;
+
+/** 記事を識別する ID。URL があれば URL、貼り付けテキストなら本文のハッシュ */
+export function articleId(a: Article): string {
+  if (a.url) return a.url;
+  // FNV-1a(32bit)。同じ本文なら同じ ID になれば十分
+  let h = 0x811c9dc5;
+  const text = a.paragraphs.join('\n');
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return `text:${(h >>> 0).toString(16)}:${text.length}`;
+}
+
+export function lookupKey(docId: string, p: number, start: number, word: string): string {
+  return `${docId}|${p}|${start}|${word}`;
+}
+
+export interface CachedLookup {
+  analysis: Analysis;
+  saved: SaveResult | null;
+}
+
+/**
+ * キャッシュにあれば解説と単語帳の状態を返す(API は呼ばない・回数も増やさない)。
+ * 単語帳から消されていたら(取り消し・削除)、もう一度登録する。
+ */
+export async function getCachedLookup(lang: Lang, key: string): Promise<CachedLookup | null> {
+  const hit = await db.lookupCache.get(key);
+  if (!hit) return null;
+  const analysis = hit.analysis as Analysis;
+  const word =
+    (hit.wordId != null ? await db.words.get(hit.wordId) : undefined) ??
+    (await db.words.where('[lang+headword]').equals([lang, analysis.lemma]).first());
+  if (word) {
+    if (word.id !== hit.wordId) await db.lookupCache.update(key, { wordId: word.id ?? null });
+    return { analysis, saved: { word, created: false } };
+  }
+  const saved = await saveLookup(lang, analysis, hit.sentence, hit.url);
+  await db.lookupCache.update(key, { wordId: saved.word.id ?? null });
+  return { analysis, saved };
+}
+
+export async function putCachedLookup(key: string, analysis: Analysis, sentence: string, url: string | undefined, wordId: number | null): Promise<void> {
+  const entry: LookupCacheEntry = { key, analysis, sentence, url, wordId, at: Date.now() };
+  await db.lookupCache.put(entry);
+  const n = await db.lookupCache.count();
+  if (n > CACHE_LIMIT) {
+    const old = await db.lookupCache.orderBy('at').limit(n - CACHE_LIMIT).primaryKeys();
+    await db.lookupCache.bulkDelete(old);
+  }
 }
