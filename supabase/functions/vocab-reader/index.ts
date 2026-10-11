@@ -164,6 +164,18 @@ function fixStress(text: string) {
   });
 }
 
+// Anthropic 側で止められたときは、原因(Console の上限など)が画面で分かるようにする
+function claudeErrorMessage(status: number, out: any): string {
+  const msg = String(out?.error?.message ?? "");
+  if (status === 429) return "Anthropic のレート制限に達しました(Console の Rate limits を確認)。少し待ってからもう一度";
+  if (/spend|usage limit|credit balance|billing/i.test(msg)) {
+    return "Anthropic の利用上限に達しました(Console のワークスペースの Spend limits か残高を確認)";
+  }
+  if (status === 401 || status === 403) return "Anthropic の API キーが無効です(Supabase の READER_ANTHROPIC_API_KEY を確認)";
+  if (status === 529 || status >= 500) return "Anthropic が混み合っています。少し待ってからもう一度";
+  return `解説を作れませんでした(Anthropic ${status})`;
+}
+
 async function analyze(body: any) {
   const word = String(body.word ?? "").trim().slice(0, 60);
   const sentence = String(body.sentence ?? "").trim().slice(0, 800);
@@ -194,7 +206,7 @@ async function analyze(body: any) {
   const out = await res.json();
   if (!res.ok) {
     console.error(`claude ${res.status}: ${JSON.stringify(out)}`);
-    return json({ error: "解説を作れませんでした" }, 502);
+    return json({ error: claudeErrorMessage(res.status, out) }, 502);
   }
   const use = out.content?.find((c: any) => c.type === "tool_use" && c.name === "report");
   let result = use?.input;
