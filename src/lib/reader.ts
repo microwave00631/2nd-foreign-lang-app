@@ -1,5 +1,5 @@
 // 読む画面: 記事の取得・単語の解説(vocab-reader Edge Function)と、未知語の登録
-import { db, getSettings, type Lang, type LookupCacheEntry, type Word, type WordExample } from '../db/schema';
+import { db, getSettings, type GrammarTags, type Lang, type LookupCacheEntry, type Word, type WordExample } from '../db/schema';
 import { INITIAL_SRS } from './srs';
 import { startOfLocalDay } from './time';
 import { normalizeRu } from './langs';
@@ -28,6 +28,8 @@ export interface Analysis {
   government: string;
   notes: string;
   sentenceJa: string;
+  /** 構造化した文法情報(格クイズ用) */
+  tags?: GrammarTags;
 }
 
 export class ReaderError extends Error {
@@ -129,6 +131,7 @@ export async function saveLookup(lang: Lang, a: Analysis, sentence: string, url?
     form: a.form,
     formReason: a.formReason,
     contextJa: a.contextJa,
+    tags: a.tags,
     url,
     at: now,
   };

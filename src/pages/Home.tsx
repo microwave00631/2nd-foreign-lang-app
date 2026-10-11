@@ -65,6 +65,14 @@ export function HomePage() {
         </button>
       </Link>
 
+      {settings.activeLang === 'ru' && (
+        <Link to="/case-quiz">
+          <button className="btn-secondary" style={{ width: '100%', marginTop: 10 }}>
+            🧩 格クイズ(読んだ単語の格・数・性・時制)
+          </button>
+        </Link>
+      )}
+
       <h2>つかいかた</h2>
       <div className="card muted" style={{ fontSize: '0.85rem', lineHeight: 1.7 }}>
         毎日のクイズで単語を学ぶと、間隔反復(SRS)が次の復習日を自動で決めます。

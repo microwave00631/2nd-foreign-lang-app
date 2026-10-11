@@ -805,3 +805,94 @@ nav.tabbar a.active {
   font-size: 0.8rem;
   line-height: 1.6;
 }
+
+/* --- case quiz(格クイズ) --- */
+.case-card .case-sentence {
+  font-size: 1rem;
+  line-height: 1.7;
+  border-left: 3px solid var(--border);
+  padding-left: 10px;
+}
+
+.case-card mark {
+  background: rgba(232, 180, 80, 0.3);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+.case-word {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin: 14px 0 2px;
+}
+
+.case-lemma {
+  font-size: 0.85rem;
+  margin-bottom: 14px;
+}
+
+.case-dims {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.case-dim-label {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.case-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.case-options button {
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.case-options button.picked {
+  border-color: var(--accent);
+  background: rgba(91, 141, 239, 0.25);
+}
+
+.case-options button.correct {
+  border-color: var(--green);
+  background: rgba(76, 195, 138, 0.22);
+}
+
+.case-options button.wrong {
+  border-color: var(--red);
+  background: rgba(229, 99, 79, 0.22);
+}
+
+.case-options button:disabled {
+  opacity: 1;
+}
+
+.case-dim.excused .case-excuse {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  background: var(--bg-input);
+  border-radius: 8px;
+  padding: 8px 10px;
+  line-height: 1.6;
+}
+
+.case-explain {
+  font-size: 0.88rem;
+  line-height: 1.7;
+  margin: 10px 0 14px;
+}
