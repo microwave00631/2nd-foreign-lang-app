@@ -66,6 +66,18 @@ export interface WordExample {
   at: number;
 }
 
+/** 読む画面の長押し結果のキャッシュ(同じ記事の同じ位置の単語は再生成しない) */
+export interface LookupCacheEntry {
+  /** `${記事ID}|${段落}|${文字位置}|${単語}` */
+  key: string;
+  /** 解説(lib/reader の Analysis。schema を DOM 非依存に保つため unknown で持つ) */
+  analysis: unknown;
+  sentence: string;
+  url?: string;
+  wordId: number | null;
+  at: number;
+}
+
 export interface Review {
   id?: number;
   wordId: number;
@@ -129,6 +141,7 @@ export class GoiDB extends Dexie {
   reviews!: Table<Review, number>;
   lookups!: Table<Lookup, number>;
   settings!: Table<Settings, string>;
+  lookupCache!: Table<LookupCacheEntry, string>;
 
   constructor() {
     super('goi-tore');
@@ -138,6 +151,9 @@ export class GoiDB extends Dexie {
       reviews: '++id, wordId, at',
       lookups: '++id, at, [lang+query]',
       settings: 'key',
+    });
+    this.version(2).stores({
+      lookupCache: 'key, at',
     });
   }
 }
