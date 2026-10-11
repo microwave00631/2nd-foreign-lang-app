@@ -51,14 +51,27 @@ interface Picked {
 }
 
 type Sheet =
-  | { state: 'loading'; picked: Picked }
+  | { state: 'loading'; picked: Picked; stage: Stage; startedAt: number }
   | { state: 'error'; picked: Picked; message: string; needsKey: boolean }
-  | { state: 'done'; picked: Picked; analysis: Analysis; saved: SaveResult | null; cached: boolean; undone?: boolean };
+  | { state: 'done'; picked: Picked; analysis: Analysis; saved: SaveResult | null; cached: boolean; saveError?: string; undone?: boolean };
+
+/** 解説ができるまでのどこにいるか(止まったときに画面で分かるように) */
+type Stage = 'cache' | 'server' | 'save';
+const STAGE_LABEL: Record<Stage, string> = {
+  cache: '端末の記録を確認中…',
+  server: 'サーバーで解説を作成中…',
+  save: '単語帳に保存中…',
+};
+/** 端末のデータベース操作がこれ以上かかったら諦めて先に進む */
+const DB_TIMEOUT_MS = 6000;
+/** これ以上待たされたら「やり直す」を出す */
+const SLOW_MS = 12000;
 
 interface LookupResult {
   analysis: Analysis;
   saved: SaveResult | null;
   cached: boolean;
+  saveError?: string;
 }
 
 export function ReaderPage() {
@@ -134,14 +147,21 @@ export function ReaderPage() {
   };
 
   const lookUp = useCallback(
-    async (picked: Picked) => {
+    async (picked: Picked, fresh = false) => {
       const id = ++reqId.current;
-      setSheet({ state: 'loading', picked });
+      setSheet({ state: 'loading', picked, stage: 'cache', startedAt: Date.now() });
       if (!article) return;
       const cacheKey = lookupKey(articleId(article), picked.p, picked.start, picked.word);
+      if (fresh) pending.current.delete(cacheKey);
+      // 進み具合は「今その位置の解説を待っているシート」にだけ反映する
+      const onStage = (stage: Stage) =>
+        setSheet((s) => (s?.state === 'loading' && key(s.picked) === key(picked) ? { ...s, stage } : s));
       let job = pending.current.get(cacheKey);
       if (!job) {
-        job = resolveLookup(cacheKey, picked, article.url).finally(() => pending.current.delete(cacheKey));
+        const j: Promise<LookupResult> = resolveLookup(cacheKey, picked, article.url, onStage).finally(() => {
+          if (pending.current.get(cacheKey) === j) pending.current.delete(cacheKey);
+        });
+        job = j;
         pending.current.set(cacheKey, job);
       }
       try {
@@ -231,7 +251,7 @@ export function ReaderPage() {
         </>
       )}
 
-      {sheet && <WordSheet sheet={sheet} onClose={close} onUndo={() => void undo()} onRetry={() => void lookUp(sheet.picked)} />}
+      {sheet && <WordSheet sheet={sheet} onClose={close} onUndo={() => void undo()} onRetry={() => void lookUp(sheet.picked, true)} />}
     </div>
   );
 }
@@ -241,18 +261,58 @@ export function ReaderPage() {
  * 同じ記事・同じ位置・同じ単語ならキャッシュを返す(API を呼ばず、長押し回数も増やさない)。
  * 初めての位置なら API で解説を作り、単語帳に登録(既にある単語なら回数+1)してキャッシュする。
  */
-async function resolveLookup(cacheKey: string, picked: Picked, url?: string): Promise<LookupResult> {
-  const hit = await getCachedLookup(LANG, cacheKey).catch(() => null);
+async function resolveLookup(
+  cacheKey: string,
+  picked: Picked,
+  url: string | undefined,
+  onStage: (s: Stage) => void,
+): Promise<LookupResult> {
+  // 端末のデータベースが応答しなくても(別タブの古い版が更新を止めている等)、解説の表示は止めない
+  onStage('cache');
+  const hit = await withTimeout(getCachedLookup(LANG, cacheKey), DB_TIMEOUT_MS).catch((e) => {
+    console.warn('[reader] cache read failed', e);
+    return null;
+  });
   if (hit) return { ...hit, cached: true };
+
+  onStage('server');
   const analysis = await analyzeWord(LANG, picked.word, picked.sentence);
+
+  onStage('save');
   let saved: SaveResult | null = null;
+  let saveError: string | undefined;
   try {
-    saved = await saveLookup(LANG, analysis, picked.sentence, url);
-  } catch {
-    saved = null;
+    saved = await withTimeout(saveLookup(LANG, analysis, picked.sentence, url), DB_TIMEOUT_MS);
+  } catch (e) {
+    console.warn('[reader] save failed', e);
+    saveError = e instanceof TimeoutError ? DB_STUCK_MESSAGE : '単語帳に保存できませんでした';
   }
-  await putCachedLookup(cacheKey, analysis, picked.sentence, url, saved?.word.id ?? null).catch(() => undefined);
-  return { analysis, saved, cached: false };
+  // キャッシュの書き込みは待たない(遅くても解説はすぐ出す)
+  void putCachedLookup(cacheKey, analysis, picked.sentence, url, saved?.word.id ?? null).catch((e) =>
+    console.warn('[reader] cache write failed', e),
+  );
+  return { analysis, saved, cached: false, saveError };
+}
+
+const DB_STUCK_MESSAGE =
+  '単語帳への保存が応答しませんでした。ほかのタブやアプリで語彙トレを開いていたら閉じてから、このページを再読み込みしてください';
+
+class TimeoutError extends Error {}
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new TimeoutError(`timeout ${ms}ms`)), ms);
+    p.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      },
+    );
+  });
 }
 
 const key = (p: { p: number; start: number }) => `${p.p}:${p.start}`;
@@ -370,7 +430,7 @@ function WordSheet({
         </button>
         <div className="sheet-surface" lang="ru">{sheet.picked.word}</div>
 
-        {sheet.state === 'loading' && <p className="muted">解説を作っています…</p>}
+        {sheet.state === 'loading' && <LoadingView sheet={sheet} onRetry={onRetry} />}
 
         {sheet.state === 'error' && (
           <>
@@ -462,9 +522,35 @@ function AnalysisView({ sheet, onUndo }: { sheet: Extract<Sheet, { state: 'done'
         ) : sheet.saved ? (
           <span>✓ 単語帳にあります(長押し {sheet.saved.word.lookupCount ?? 1} 回目)</span>
         ) : (
-          <span className="error-text">単語帳に保存できませんでした</span>
+          <span className="error-text">{sheet.saveError ?? '単語帳に保存できませんでした'}</span>
         )}
       </div>
+    </div>
+  );
+}
+
+function LoadingView({ sheet, onRetry }: { sheet: Extract<Sheet, { state: 'loading' }>; onRetry: () => void }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, []);
+  const elapsed = Math.max(0, Math.floor((now - sheet.startedAt) / 1000));
+  return (
+    <div className="loading-view">
+      <p className="muted">
+        {STAGE_LABEL[sheet.stage]}({elapsed}秒)
+      </p>
+      {now - sheet.startedAt > SLOW_MS && (
+        <>
+          <p className="muted loading-hint">
+            時間がかかっています。止まっている場合は、この表示({STAGE_LABEL[sheet.stage]})を教えてください。
+          </p>
+          <button className="btn-secondary" onClick={onRetry}>
+            やり直す
+          </button>
+        </>
+      )}
     </div>
   );
 }

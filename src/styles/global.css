@@ -800,3 +800,8 @@ nav.tabbar a.active {
   margin: 0 0 16px;
   color: var(--text-dim);
 }
+
+.loading-view .loading-hint {
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
