@@ -55,6 +55,21 @@ export interface WordGrammar {
   notes?: string;
 }
 
+/** 語形の文法情報(格クイズ用)。その語形で表されていない次元は持たない */
+export interface GrammarTags {
+  case?: 'nom' | 'gen' | 'dat' | 'acc' | 'ins' | 'prep';
+  number?: 'sg' | 'pl';
+  gender?: 'm' | 'f' | 'n';
+  tense?: 'past' | 'present' | 'future' | 'infinitive' | 'imperative';
+  person?: '1' | '2' | '3';
+  /** 不変化語(кофе, метро など) */
+  indeclinable?: boolean;
+  /** 形容詞・形動詞の短語尾形 */
+  shortForm?: boolean;
+  /** 文脈からも格が1つに決まらない */
+  caseAmbiguous?: boolean;
+}
+
 export interface WordExample {
   surface: string;
   sentence: string;
@@ -62,6 +77,8 @@ export interface WordExample {
   form?: string;
   formReason?: string;
   contextJa?: string;
+  /** 構造化した文法情報(サーバーが返したもの。古い例文には無い) */
+  tags?: GrammarTags;
   url?: string;
   at: number;
 }

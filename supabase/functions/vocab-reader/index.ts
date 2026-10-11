@@ -143,6 +143,21 @@ const ANALYSIS_TOOL = {
       government: { type: "string", description: "この語が要求する格・前置詞(支配)。例: что(対格)を во что(対格)へ / кому(与格)に。前置詞ならそれが要求する格と意味の違い。特になければ空文字" },
       notes: { type: "string", description: "学習者向けの補足(不規則変化、移動アクセント、よく使う結合など)。なければ空文字" },
       sentenceJa: { type: "string", description: "文全体の自然な日本語訳" },
+      tags: {
+        type: "object",
+        description:
+          "この語形が表している文法情報(格クイズ用)。語形で区別しないもの(複数形の性、現在形・未来形の性、過去形の人称など)や当てはまらないものは空文字。名詞の性は辞書的な性。",
+        properties: {
+          case: { type: "string", enum: ["nom", "gen", "dat", "acc", "ins", "prep", ""], description: "格(不変化語は文脈から決まる格)" },
+          number: { type: "string", enum: ["sg", "pl", ""], description: "数" },
+          gender: { type: "string", enum: ["m", "f", "n", ""], description: "性" },
+          tense: { type: "string", enum: ["past", "present", "future", "infinitive", "imperative", ""], description: "動詞の時制(不定形・命令形も)。動詞以外は空文字" },
+          person: { type: "string", enum: ["1", "2", "3", ""], description: "動詞の現在・未来形の人称" },
+          indeclinable: { type: "boolean", description: "不変化語(кофе, метро など)なら true" },
+          shortForm: { type: "boolean", description: "形容詞・形動詞の短語尾形なら true" },
+          caseAmbiguous: { type: "boolean", description: "文脈を見ても格が1つに決まらないとき true" },
+        },
+      },
     },
     required: ["lemma", "lemmaStressed", "pos", "meaningJa", "contextJa", "form", "formReason", "gender", "aspect", "aspectPair", "government", "notes", "sentenceJa"],
   },
@@ -240,7 +255,27 @@ async function analyze(body: any) {
     government: s(result.government),
     notes: s(result.notes),
     sentenceJa: s(result.sentenceJa),
+    tags: cleanTags(result.tags),
   });
+}
+
+// モデルが返したタグを、決まった値だけに絞る(空文字・範囲外は捨てる)
+const TAG_VALUES: Record<string, string[]> = {
+  case: ["nom", "gen", "dat", "acc", "ins", "prep"],
+  number: ["sg", "pl"],
+  gender: ["m", "f", "n"],
+  tense: ["past", "present", "future", "infinitive", "imperative"],
+  person: ["1", "2", "3"],
+};
+function cleanTags(raw: any): Record<string, string | boolean> | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const out: Record<string, string | boolean> = {};
+  for (const [k, allowed] of Object.entries(TAG_VALUES)) {
+    const v = String(raw[k] ?? "");
+    if (allowed.includes(v)) out[k] = v;
+  }
+  for (const k of ["indeclinable", "shortForm", "caseAmbiguous"]) if (raw[k] === true) out[k] = true;
+  return Object.keys(out).length ? out : undefined;
 }
 
 Deno.serve(async (req) => {
