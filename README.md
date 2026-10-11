@@ -108,7 +108,8 @@ PWA単体では「アプリを完全に閉じた状態への定時プッシュ�
 
 記事の取得(CORS 回避)と単語の解説は Supabase Edge Function `vocab-reader`(`supabase/functions/vocab-reader/`)が行います。
 
-- 解説は Claude(既定 `claude-haiku-5-5`、Secret `READER_MODEL` で変更可)。Secret `ANTHROPIC_API_KEY` が必要
+- 解説は Claude(既定 `claude-haiku-5-5`、Secret `READER_MODEL` で変更可)。API キーは Secret `READER_ANTHROPIC_API_KEY`(このアプリ専用。未設定なら `ANTHROPIC_API_KEY`)
+- 解説の呼び出しは1日 300 回まで(日本時間で日付が変わるとリセット。Secret `READER_DAILY_LIMIT` で変更可)。回数は `vocab_reader_usage` テーブル
 - アクセスキー: `app_secrets` テーブルの `vocab_reader_key`。アプリの設定画面「読む(ロシア語)」に入力するか、`…/settings?readerKey=<キー>` を一度開くと保存されます
 - エンドポイントはビルド時の `VITE_READER_ENDPOINT` で変更可能
 

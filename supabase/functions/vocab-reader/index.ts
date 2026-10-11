@@ -6,7 +6,8 @@
 //      長押しした単語を、その文の中での形として Claude に解説させる
 //
 //  認証: ヘッダ x-app-key が app_secrets.vocab_reader_key と一致すること
-//  必要な Secrets: ANTHROPIC_API_KEY(任意: READER_MODEL)
+//  必要な Secrets: READER_ANTHROPIC_API_KEY(このアプリ専用のキー。無ければ ANTHROPIC_API_KEY を使う)
+//  任意: READER_MODEL, READER_DAILY_LIMIT(解説の1日あたり上限。既定 300。日付は日本時間)
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { Readability } from "npm:@mozilla/readability@0.5.0";
 import { parseHTML } from "npm:linkedom@0.18.5";
@@ -15,6 +16,19 @@ const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SE
 const MODEL = Deno.env.get("READER_MODEL") ?? "claude-haiku-5-5";
 // Haiku 5.5 は既定で考えてから答える。解説は速さ優先なので考えずに答えさせる
 const THINKING = MODEL.startsWith("claude-haiku-5") ? { thinking: { type: "disabled" } } : {};
+// スタックチャン等と請求・上限を分けられるよう、専用キーがあればそちらを使う
+const API_KEY = Deno.env.get("READER_ANTHROPIC_API_KEY") || Deno.env.get("ANTHROPIC_API_KEY");
+const DAILY_LIMIT = Math.max(1, Number(Deno.env.get("READER_DAILY_LIMIT")) || 300);
+
+/** 解説1回分の枠を取る。上限に達していたら false(DB の関数で数えるので同時アクセスでも超えない) */
+async function takeQuota(): Promise<boolean> {
+  const { data, error } = await db.rpc("vocab_reader_take", { p_limit: DAILY_LIMIT });
+  if (error) {
+    console.error(`quota: ${error.message}`);
+    return false; // 数えられないときは使わせない(請求の暴走を防ぐ側に倒す)
+  }
+  return data != null;
+}
 
 const CORS = {
   "access-control-allow-origin": "*",
@@ -156,11 +170,15 @@ async function analyze(body: any) {
   const lang = String(body.lang ?? "ru");
   if (!word || !sentence) return json({ error: "word と sentence が必要です" }, 400);
   if (lang !== "ru") return json({ error: "未対応の言語です" }, 400);
+  if (!API_KEY) return json({ error: "サーバーに API キーが設定されていません" }, 500);
+  if (!(await takeQuota())) {
+    return json({ error: `今日の解説の上限(${DAILY_LIMIT}回)に達しました。明日また使えます` }, 429);
+  }
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
-      "x-api-key": Deno.env.get("ANTHROPIC_API_KEY")!,
+      "x-api-key": API_KEY,
       "anthropic-version": "2023-06-01",
       "content-type": "application/json",
     },
