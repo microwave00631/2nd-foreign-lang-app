@@ -17,7 +17,8 @@ const MODEL = Deno.env.get("READER_MODEL") ?? "claude-haiku-5-5";
 // Haiku 5.5 は既定で考えてから答える。解説は速さ優先なので考えずに答えさせる
 const THINKING = MODEL.startsWith("claude-haiku-5") ? { thinking: { type: "disabled" } } : {};
 // スタックチャン等と請求・上限を分けられるよう、専用キーがあればそちらを使う
-const API_KEY = Deno.env.get("READER_ANTHROPIC_API_KEY") || Deno.env.get("ANTHROPIC_API_KEY");
+// 貼り付けで前後に空白・改行が混ざっても使えるように trim する
+const API_KEY = (Deno.env.get("READER_ANTHROPIC_API_KEY") || Deno.env.get("ANTHROPIC_API_KEY") || "").trim();
 const DAILY_LIMIT = Math.max(1, Number(Deno.env.get("READER_DAILY_LIMIT")) || 300);
 
 /** 解説1回分の枠を取る。上限に達していたら false(DB の関数で数えるので同時アクセスでも超えない) */
