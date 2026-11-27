@@ -1,5 +1,6 @@
 // NOTE: このモジュールは Service Worker からも import されるため、DOM API に依存しないこと。
 import Dexie, { type Table } from 'dexie';
+import type { KenteiRecord } from '../lib/kentei';
 
 export type Lang = 'zh' | 'th' | 'ru';
 export type Stage = 'new' | 'learning' | 'review' | 'mastered';
@@ -159,6 +160,7 @@ export class GoiDB extends Dexie {
   lookups!: Table<Lookup, number>;
   settings!: Table<Settings, string>;
   lookupCache!: Table<LookupCacheEntry, string>;
+  kentei!: Table<KenteiRecord, string>;
 
   constructor() {
     super('goi-tore');
@@ -171,6 +173,9 @@ export class GoiDB extends Dexie {
     });
     this.version(2).stores({
       lookupCache: 'key, at',
+    });
+    this.version(3).stores({
+      kentei: 'id, level, lastAt',
     });
   }
 }
