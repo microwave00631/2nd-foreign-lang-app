@@ -73,6 +73,14 @@ export function HomePage() {
         </Link>
       )}
 
+      {settings.activeLang === 'ru' && (
+        <Link to="/kentei">
+          <button className="btn-secondary" style={{ width: '100%', marginTop: 10 }}>
+            🏆 検定クイズ(ロシア語能力検定 4〜2級)
+          </button>
+        </Link>
+      )}
+
       <h2>つかいかた</h2>
       <div className="card muted" style={{ fontSize: '0.85rem', lineHeight: 1.7 }}>
         毎日のクイズで単語を学ぶと、間隔反復(SRS)が次の復習日を自動で決めます。
