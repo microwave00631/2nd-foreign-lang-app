@@ -48,3 +48,30 @@ describe('出題', () => {
     expect(levelProgress(KENTEI_RU, recs, '4')).toMatchObject({ total: 30, mastered: 0, review: 3 });
   });
 });
+
+import { ASPECT_RU, ASPECT_RULES } from '../data/aspectRu';
+import { ruleStats, weakRules } from './kentei';
+
+describe('体トレーニング', () => {
+  it('問題の形式とルールが正しい', () => {
+    const keys = new Set(ASPECT_RULES.map((r) => r.key));
+    expect(new Set([...KENTEI_RU, ...ASPECT_RU].map((q) => q.id)).size).toBe(KENTEI_RU.length + ASPECT_RU.length);
+    for (const q of ASPECT_RU) {
+      expect(keys.has(q.rule!)).toBe(true);
+      expect(q.options).toHaveLength(2);
+      expect(q.sentence.split('___').length).toBe(2);
+      const rule = ASPECT_RULES.find((r) => r.key === q.rule)!;
+      // ルールが指す体と正解の体が食い違っていないこと
+      if (rule.aspect !== 'mixed') expect(q.answer).toBe(rule.aspect === 'impf' ? 0 : 1);
+    }
+    for (const r of ASPECT_RULES) expect(ASPECT_RU.some((q) => q.rule === r.key)).toBe(true);
+  });
+
+  it('間違えたルールが苦手に入る', () => {
+    const q = ASPECT_RU[0];
+    const recs = new Map<string, KenteiRecord>([[q.id, nextRecord(undefined, q, false, 1)]]);
+    const stats = ruleStats(ASPECT_RU, recs);
+    expect(stats.get(q.rule!)).toMatchObject({ wrong: 1, review: 1 });
+    expect(weakRules(stats)).toEqual([q.rule]);
+  });
+});

@@ -94,3 +94,26 @@ export function levelProgress(bank: KenteiQuestion[], records: Map<string, Kente
     review: qs.filter((q) => bucketOf(records.get(q.id)) === 0).length,
   };
 }
+
+/** ルールごとの成績(体トレーニング用)。正答率の低い順に並べるのに使う */
+export function ruleStats(bank: KenteiQuestion[], records: Map<string, KenteiRecord>) {
+  const out = new Map<string, { total: number; correct: number; wrong: number; review: number }>();
+  for (const q of bank) {
+    if (!q.rule) continue;
+    const s = out.get(q.rule) ?? { total: 0, correct: 0, wrong: 0, review: 0 };
+    const r = records.get(q.id);
+    s.total++;
+    s.correct += r?.correct ?? 0;
+    s.wrong += r?.wrong ?? 0;
+    if (bucketOf(r) === 0) s.review++;
+    out.set(q.rule, s);
+  }
+  return out;
+}
+
+/** 正答率が低いルール(解いたことがあり 80% 未満、または要復習あり) */
+export function weakRules(stats: ReturnType<typeof ruleStats>) {
+  return [...stats.entries()]
+    .filter(([, s]) => s.review > 0 || (s.correct + s.wrong > 0 && s.correct / (s.correct + s.wrong) < 0.8))
+    .map(([k]) => k);
+}

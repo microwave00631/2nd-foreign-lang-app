@@ -14,6 +14,8 @@ export interface KenteiQuestion {
   options: string[];
   answer: number;
   explain: string;
+  /** 体トレーニングのルール(aspectRu の ASPECT_RULES の key) */
+  rule?: string;
 }
 
 type Row = [id: string, topic: string, sentence: string, ja: string, options: string[], answer: number, explain: string];

@@ -12,6 +12,7 @@ import {
   type SessionQuestion,
 } from '../lib/kentei';
 import { SpeakButton } from '../components/SpeakButton';
+import { ASPECT_LABEL, ASPECT_RULES } from '../data/aspectRu';
 
 type Phase = 'menu' | 'quiz' | 'done';
 
@@ -84,6 +85,11 @@ export function KenteiPage() {
         >
           🔁 間違えた問題だけ({reviewCount}問)
         </button>
+        <Link to="/aspect">
+          <button className="btn-secondary" style={{ width: '100%', marginTop: 10 }}>
+            ⏳ 完了体・不完了体を集中トレーニング
+          </button>
+        </Link>
       </div>
     );
   }
@@ -145,7 +151,7 @@ export function KenteiPage() {
   );
 }
 
-function KenteiCard({
+export function KenteiCard({
   q,
   onAnswer,
   onNext,
@@ -196,6 +202,7 @@ function KenteiCard({
             <span style={{ flex: 1 }}>{q.explain}</span>
             <SpeakButton text={filled} lang="ru" />
           </div>
+          {q.rule && <AspectNote q={q} />}
           <button className="btn-primary" onClick={onNext}>
             次へ
           </button>
@@ -205,6 +212,27 @@ function KenteiCard({
   );
 }
 
-function fill(sentence: string, word: string) {
+export function fill(sentence: string, word: string) {
   return sentence.replace('___', word).replace(/\s+([.,!?])/g, '$1');
+}
+
+function AspectNote({ q }: { q: SessionQuestion }) {
+  const rule = ASPECT_RULES.find((r) => r.key === q.rule);
+  return (
+    <div className="aspect-note">
+      <div lang="ru">
+        {ASPECT_LABEL.map((label, i) => (
+          <span key={label} className={i === q.answer ? 'on' : ''}>
+            {label}: {q.options[i]}
+          </span>
+        ))}
+      </div>
+      {rule && (
+        <div className="muted">
+          <b>{rule.name}</b> — {rule.summary}
+          {rule.markers && <>(目印: <span lang="ru">{rule.markers}</span>)</>}
+        </div>
+      )}
+    </div>
+  );
 }
