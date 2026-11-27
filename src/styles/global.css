@@ -939,3 +939,67 @@ nav.tabbar a.active {
   padding-top: 8px;
   margin-top: 8px;
 }
+
+/* --- 体トレーニング --- */
+.aspect-note {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  background: var(--bg-input);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 14px;
+}
+
+.aspect-note span {
+  margin-right: 12px;
+  color: var(--text-dim);
+}
+
+.aspect-note span.on {
+  color: var(--green);
+  font-weight: 700;
+}
+
+.aspect-rules {
+  padding-top: 6px;
+}
+
+.aspect-rules-head {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin: 10px 0 4px;
+}
+
+.aspect-rule {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 2px;
+  font-size: 0.92rem;
+}
+
+.aspect-rule-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.aspect-rule-row .muted {
+  font-size: 0.8rem;
+}
+
+.aspect-rule-desc {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  margin-top: 4px;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  padding: 0;
+}

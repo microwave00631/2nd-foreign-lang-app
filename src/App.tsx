@@ -11,6 +11,7 @@ import { SettingsPage } from './pages/Settings';
 import { ReaderPage } from './pages/Reader';
 import { CaseQuizPage } from './pages/CaseQuiz';
 import { KenteiPage } from './pages/Kentei';
+import { AspectPage } from './pages/Aspect';
 import { SettingsProvider } from './context/SettingsContext';
 import { seedDictionaries } from './db/seed';
 import { registerPeriodicSync, startForegroundTimer } from './lib/notify';
@@ -33,6 +34,7 @@ export function App() {
               <Route path="/read" element={<ReaderPage />} />
               <Route path="/case-quiz" element={<CaseQuizPage />} />
               <Route path="/kentei" element={<KenteiPage />} />
+              <Route path="/aspect" element={<AspectPage />} />
               <Route path="/quiz" element={<QuizPage />} />
               <Route path="/words" element={<WordsPage />} />
               <Route path="/stats" element={<StatsPage />} />
